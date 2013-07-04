@@ -14,7 +14,9 @@
 #ifndef LLVM_CLANG_CODEGEN_MODULEBUILDER_H
 #define LLVM_CLANG_CODEGEN_MODULEBUILDER_H
 
-#include "clang/AST/ASTConsumer.h"
+#include "flang/AST/ASTConsumer.h"
+#include "flang/Basic/TargetOptions.h"
+#include "flang/Frontend/CodeGenOptions.h"
 #include <string>
 
 namespace llvm {
@@ -22,11 +24,9 @@ namespace llvm {
   class Module;
 }
 
-namespace clang {
+namespace flang {
   class DiagnosticsEngine;
   class LangOptions;
-  class CodeGenOptions;
-  class TargetOptions;
 
   class CodeGenerator : public ASTConsumer {
     virtual void anchor();

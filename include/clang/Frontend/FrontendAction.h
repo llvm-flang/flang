@@ -28,17 +28,12 @@
 
 namespace clang {
 class ASTConsumer;
-class ASTMergeAction;
-class ASTUnit;
 class CompilerInstance;
 
 /// Abstract base class for actions which can be performed by the frontend.
 class FrontendAction {
   FrontendInputFile CurrentInput;
-  OwningPtr<ASTUnit> CurrentASTUnit;
   CompilerInstance *Instance;
-  friend class ASTMergeAction;
-  friend class WrapperFrontendAction;
 
 private:
   ASTConsumer* CreateWrappedASTConsumer(CompilerInstance &CI,
@@ -130,7 +125,7 @@ public:
   const FrontendInputFile &getCurrentInput() const {
     return CurrentInput;
   }
-  
+
   const StringRef getCurrentFile() const {
     assert(!CurrentInput.isEmpty() && "No current file!");
     return CurrentInput.getFile();
@@ -140,42 +135,6 @@ public:
     assert(!CurrentInput.isEmpty() && "No current file!");
     return CurrentInput.getKind();
   }
-
-  ASTUnit &getCurrentASTUnit() const {
-    assert(CurrentASTUnit && "No current AST unit!");
-    return *CurrentASTUnit;
-  }
-
-  ASTUnit *takeCurrentASTUnit() {
-    return CurrentASTUnit.take();
-  }
-
-  void setCurrentInput(const FrontendInputFile &CurrentInput, ASTUnit *AST = 0);
-
-  /// @}
-  /// @name Supported Modes
-  /// @{
-
-  /// \brief Does this action only use the preprocessor?
-  ///
-  /// If so no AST context will be created and this action will be invalid
-  /// with AST file inputs.
-  virtual bool usesPreprocessorOnly() const = 0;
-
-  /// \brief For AST-based actions, the kind of translation unit we're handling.
-  virtual TranslationUnitKind getTranslationUnitKind() { return TU_Complete; }
-
-  /// \brief Does this action support use with PCH?
-  virtual bool hasPCHSupport() const { return !usesPreprocessorOnly(); }
-
-  /// \brief Does this action support use with AST files?
-  virtual bool hasASTFileSupport() const { return !usesPreprocessorOnly(); }
-
-  /// \brief Does this action support use with IR files?
-  virtual bool hasIRSupport() const { return false; }
-
-  /// \brief Does this action support use with code completion?
-  virtual bool hasCodeCompletionSupport() const { return false; }
 
   /// @}
   /// @name Public Action Interface
@@ -222,68 +181,6 @@ protected:
   /// the user requested it and the action supports it.
   virtual void ExecuteAction();
 
-public:
-  virtual bool usesPreprocessorOnly() const { return false; }
-};
-
-class PluginASTAction : public ASTFrontendAction {
-  virtual void anchor();
-protected:
-  virtual ASTConsumer *CreateASTConsumer(CompilerInstance &CI,
-                                         StringRef InFile) = 0;
-
-public:
-  /// \brief Parse the given plugin command line arguments.
-  ///
-  /// \param CI - The compiler instance, for use in reporting diagnostics.
-  /// \return True if the parsing succeeded; otherwise the plugin will be
-  /// destroyed and no action run. The plugin is responsible for using the
-  /// CompilerInstance's Diagnostic object to report errors.
-  virtual bool ParseArgs(const CompilerInstance &CI,
-                         const std::vector<std::string> &arg) = 0;
-};
-
-/// \brief Abstract base class to use for preprocessor-based frontend actions.
-class PreprocessorFrontendAction : public FrontendAction {
-protected:
-  /// \brief Provide a default implementation which returns aborts;
-  /// this method should never be called by FrontendAction clients.
-  virtual ASTConsumer *CreateASTConsumer(CompilerInstance &CI,
-                                         StringRef InFile);
-
-public:
-  virtual bool usesPreprocessorOnly() const { return true; }
-};
-
-/// \brief A frontend action which simply wraps some other runtime-specified
-/// frontend action.
-///
-/// Deriving from this class allows an action to inject custom logic around
-/// some existing action's behavior. It implements every virtual method in
-/// the FrontendAction interface by forwarding to the wrapped action.
-class WrapperFrontendAction : public FrontendAction {
-  OwningPtr<FrontendAction> WrappedAction;
-
-protected:
-  virtual ASTConsumer *CreateASTConsumer(CompilerInstance &CI,
-                                         StringRef InFile);
-  virtual bool BeginInvocation(CompilerInstance &CI);
-  virtual bool BeginSourceFileAction(CompilerInstance &CI,
-                                     StringRef Filename);
-  virtual void ExecuteAction();
-  virtual void EndSourceFileAction();
-
-public:
-  /// Construct a WrapperFrontendAction from an existing action, taking
-  /// ownership of it.
-  WrapperFrontendAction(FrontendAction *WrappedAction);
-
-  virtual bool usesPreprocessorOnly() const;
-  virtual TranslationUnitKind getTranslationUnitKind();
-  virtual bool hasPCHSupport() const;
-  virtual bool hasASTFileSupport() const;
-  virtual bool hasIRSupport() const;
-  virtual bool hasCodeCompletionSupport() const;
 };
 
 }  // end namespace clang
