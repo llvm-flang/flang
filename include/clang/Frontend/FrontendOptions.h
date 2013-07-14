@@ -7,11 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_FRONTEND_FRONTENDOPTIONS_H
-#define LLVM_CLANG_FRONTEND_FRONTENDOPTIONS_H
+#ifndef LLVM_FLANG_FRONTEND_FRONTENDOPTIONS_H
+#define LLVM_FLANG_FRONTEND_FRONTENDOPTIONS_H
 
-#include "clang/Frontend/CommandLineSourceLoc.h"
-#include "clang/Sema/CodeCompleteOptions.h"
+#include "flang/Frontend/CommandLineSourceLoc.h"
 #include "llvm/ADT/StringRef.h"
 #include <string>
 #include <vector>
@@ -20,7 +19,7 @@ namespace llvm {
 class MemoryBuffer;
 }
 
-namespace clang {
+namespace flang {
 
 namespace frontend {
   enum ActionKind {
@@ -230,6 +229,6 @@ public:
   static InputKind getInputKindForExtension(StringRef Extension);
 };
 
-}  // end namespace clang
+}  // end namespace flang
 
 #endif

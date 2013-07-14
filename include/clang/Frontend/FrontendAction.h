@@ -8,19 +8,19 @@
 //===----------------------------------------------------------------------===//
 ///
 /// \file
-/// \brief Defines the clang::FrontendAction interface and various convenience
-/// abstract classes (clang::ASTFrontendAction, clang::PluginASTAction,
-/// clang::PreprocessorFrontendAction, and clang::WrapperFrontendAction)
+/// \brief Defines the flang::FrontendAction interface and various convenience
+/// abstract classes (flang::ASTFrontendAction, flang::PluginASTAction,
+/// flang::PreprocessorFrontendAction, and flang::WrapperFrontendAction)
 /// derived from it.
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_FRONTEND_FRONTENDACTION_H
-#define LLVM_CLANG_FRONTEND_FRONTENDACTION_H
+#ifndef LLVM_FLANG_FRONTEND_FRONTENDACTION_H
+#define LLVM_FLANG_FRONTEND_FRONTENDACTION_H
 
-#include "clang/Basic/LLVM.h"
-#include "clang/Basic/LangOptions.h"
-#include "clang/Frontend/FrontendOptions.h"
+#include "flang/Basic/LLVM.h"
+#include "flang/Basic/LangOptions.h"
+#include "flang/Frontend/FrontendOptions.h"
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
 #include <string>
@@ -183,6 +183,6 @@ protected:
 
 };
 
-}  // end namespace clang
+}  // end namespace flang
 
 #endif

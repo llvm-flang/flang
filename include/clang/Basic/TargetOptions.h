@@ -8,22 +8,22 @@
 //===----------------------------------------------------------------------===//
 ///
 /// \file
-/// \brief Defines the clang::TargetOptions class.
+/// \brief Defines the flang::TargetOptions class.
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_FRONTEND_TARGETOPTIONS_H
-#define LLVM_CLANG_FRONTEND_TARGETOPTIONS_H
+#ifndef LLVM_FLANG_FRONTEND_TARGETOPTIONS_H
+#define LLVM_FLANG_FRONTEND_TARGETOPTIONS_H
 
-#include "clang/Basic/LLVM.h"
+#include "flang/Basic/LLVM.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
 #include <string>
 #include <vector>
 
-namespace clang {
+namespace flang {
 
 /// \brief Options for controlling the target.
-class TargetOptions : public RefCountedBase<TargetOptions> {
+class TargetOptions : public llvm::RefCountedBase<TargetOptions> {
 public:
   /// If given, the name of the target triple to compile for. If not given the
   /// target will be selected to match the host.

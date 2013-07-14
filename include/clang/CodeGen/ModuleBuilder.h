@@ -11,8 +11,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_CODEGEN_MODULEBUILDER_H
-#define LLVM_CLANG_CODEGEN_MODULEBUILDER_H
+#ifndef LLVM_FLANG_CODEGEN_MODULEBUILDER_H
+#define LLVM_FLANG_CODEGEN_MODULEBUILDER_H
 
 #include "flang/AST/ASTConsumer.h"
 #include "flang/Basic/TargetOptions.h"

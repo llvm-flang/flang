@@ -11,14 +11,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_FRONTEND_CODEGENOPTIONS_H
-#define LLVM_CLANG_FRONTEND_CODEGENOPTIONS_H
+#ifndef LLVM_FLANG_FRONTEND_CODEGENOPTIONS_H
+#define LLVM_FLANG_FRONTEND_CODEGENOPTIONS_H
 
 #include <string>
 #include <vector>
 #include <string.h>
 
-namespace clang {
+namespace flang {
 
 /// \brief Bitfields of CodeGenOptions, split out from CodeGenOptions to ensure
 /// that this large collection of bitfields is a trivial class type.
@@ -26,12 +26,12 @@ class CodeGenOptionsBase {
 public:
 #define CODEGENOPT(Name, Bits, Default) unsigned Name : Bits;
 #define ENUM_CODEGENOPT(Name, Type, Bits, Default)
-#include "clang/Frontend/CodeGenOptions.def"
+#include "flang/Frontend/CodeGenOptions.def"
 
 protected:
 #define CODEGENOPT(Name, Bits, Default)
 #define ENUM_CODEGENOPT(Name, Type, Bits, Default) unsigned Name : Bits;
-#include "clang/Frontend/CodeGenOptions.def"
+#include "flang/Frontend/CodeGenOptions.def"
 };
 
 /// CodeGenOptions - Track various options which control how the code
@@ -135,19 +135,19 @@ public:
 #define ENUM_CODEGENOPT(Name, Type, Bits, Default) \
   Type get##Name() const { return static_cast<Type>(Name); } \
   void set##Name(Type Value) { Name = static_cast<unsigned>(Value); }
-#include "clang/Frontend/CodeGenOptions.def"
+#include "flang/Frontend/CodeGenOptions.def"
 
   CodeGenOptions() {
 #define CODEGENOPT(Name, Bits, Default) Name = Default;
 #define ENUM_CODEGENOPT(Name, Type, Bits, Default) \
   set##Name(Default);
-#include "clang/Frontend/CodeGenOptions.def"
+#include "flang/Frontend/CodeGenOptions.def"
 
     RelocationModel = "pic";
     memcpy(CoverageVersion, "402*", 4);
   }
 };
 
-}  // end namespace clang
+}  // end namespace flang
 
 #endif
