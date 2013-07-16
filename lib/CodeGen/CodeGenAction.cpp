@@ -14,6 +14,7 @@
 #include "flang/AST/DeclGroup.h"
 #include "flang/CodeGen/BackendUtil.h"
 #include "flang/CodeGen/ModuleBuilder.h"
+#include "flang/Frontend/CompilerInstance.h"
 #include "flang/Frontend/FrontendDiagnostic.h"
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallString.h"
@@ -245,7 +246,7 @@ void CodeGenAction::ExecuteAction() {
       return;
 
     bool Invalid;
-    SourceManager &SM = CI.getSourceManager();
+    llvm::SourceMgr &SM = CI.getSourceManager();
     const llvm::MemoryBuffer *MainFile = SM.getBuffer(SM.getMainFileID(),
                                                       &Invalid);
     if (Invalid)

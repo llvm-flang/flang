@@ -20,6 +20,7 @@
 
 #include "flang/Basic/LLVM.h"
 #include "flang/Basic/LangOptions.h"
+#include "flang/Frontend/ASTUnit.h"
 #include "flang/Frontend/FrontendOptions.h"
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/StringRef.h"
@@ -32,6 +33,7 @@ class CompilerInstance;
 
 /// Abstract base class for actions which can be performed by the frontend.
 class FrontendAction {
+  OwningPtr<ASTUnit> CurrentASTUnit;
   CompilerInstance *Instance;
 
 private:
@@ -111,6 +113,34 @@ public:
   }
 
   void setCompilerInstance(CompilerInstance *Value) { Instance = Value; }
+
+  /// @}
+  /// @name Current File Information
+  /// @{
+
+  bool isCurrentFileAST() const {
+    assert(!CurrentInput.isEmpty() && "No current file!");
+    return CurrentASTUnit.get() != nullptr;
+  }
+
+  const StringRef getCurrentFile() const {
+    assert(!CurrentInput.isEmpty() && "No current file!");
+    return CurrentInput.getFile();
+  }
+
+  InputKind getCurrentFileKind() const {
+    assert(!CurrentInput.isEmpty() && "No current file!");
+    return CurrentInput.getKind();
+  }
+
+  ASTUnit &getCurrentASTUnit() const {
+    assert(CurrentASTUnit && "No current AST unit!");
+    return *CurrentASTUnit;
+  }
+
+  ASTUnit *takeCurrentASTUnit() {
+    return CurrentASTUnit.take();
+  }
 
   /// @}
   /// @name Public Action Interface
