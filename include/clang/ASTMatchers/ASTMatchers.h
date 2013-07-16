@@ -640,6 +640,18 @@ const internal::VariadicDynCastAllOfMatcher<
   Stmt,
   CXXConstructExpr> constructExpr;
 
+/// \brief Matches unresolved constructor call expressions.
+///
+/// Example matches T(t) in return statement of f
+///     (matcher = unresolvedConstructExpr())
+/// \code
+///   template <typename T>
+///   void f(const T& t) { return T(t); }
+/// \endcode
+const internal::VariadicDynCastAllOfMatcher<
+  Stmt,
+  CXXUnresolvedConstructExpr> unresolvedConstructExpr;
+
 /// \brief Matches implicit and explicit this expressions.
 ///
 /// Example matches the implicit this expression in "return i".
@@ -2893,7 +2905,9 @@ AST_TYPE_MATCHER(ComplexType, complexType);
 ///   matches "int b[7]"
 ///
 /// Usable as: Matcher<ArrayType>, Matcher<ComplexType>
-AST_TYPELOC_TRAVERSE_MATCHER(hasElementType, getElement);
+AST_TYPELOC_TRAVERSE_MATCHER(
+    hasElementType, getElement,
+    AST_POLYMORPHIC_SUPPORTED_TYPES_2(ArrayType, ComplexType));
 
 /// \brief Matches C arrays with a specified constant size.
 ///
@@ -3000,7 +3014,8 @@ AST_TYPE_MATCHER(AtomicType, atomicType);
 ///  matches "_Atomic(int) i"
 ///
 /// Usable as: Matcher<AtomicType>
-AST_TYPELOC_TRAVERSE_MATCHER(hasValueType, getValue);
+AST_TYPELOC_TRAVERSE_MATCHER(hasValueType, getValue,
+                             AST_POLYMORPHIC_SUPPORTED_TYPES_1(AtomicType));
 
 /// \brief Matches types nodes representing C++11 auto types.
 ///
@@ -3028,7 +3043,8 @@ AST_TYPE_MATCHER(AutoType, autoType);
 ///   matches "auto a"
 ///
 /// Usable as: Matcher<AutoType>
-AST_TYPE_TRAVERSE_MATCHER(hasDeducedType, getDeducedType);
+AST_TYPE_TRAVERSE_MATCHER(hasDeducedType, getDeducedType,
+                          AST_POLYMORPHIC_SUPPORTED_TYPES_1(AutoType));
 
 /// \brief Matches \c FunctionType nodes.
 ///
@@ -3065,7 +3081,8 @@ AST_TYPE_MATCHER(ParenType, parenType);
 /// \c ptr_to_func but not \c ptr_to_array.
 ///
 /// Usable as: Matcher<ParenType>
-AST_TYPE_TRAVERSE_MATCHER(innerType, getInnerType);
+AST_TYPE_TRAVERSE_MATCHER(innerType, getInnerType,
+                          AST_POLYMORPHIC_SUPPORTED_TYPES_1(ParenType));
 
 /// \brief Matches block pointer types, i.e. types syntactically represented as
 /// "void (^)(int)".
@@ -3159,7 +3176,10 @@ AST_TYPE_MATCHER(RValueReferenceType, rValueReferenceType);
 ///
 /// Usable as: Matcher<BlockPointerType>, Matcher<MemberPointerType>,
 ///   Matcher<PointerType>, Matcher<ReferenceType>
-AST_TYPELOC_TRAVERSE_MATCHER(pointee, getPointee);
+AST_TYPELOC_TRAVERSE_MATCHER(
+    pointee, getPointee,
+    AST_POLYMORPHIC_SUPPORTED_TYPES_4(BlockPointerType, MemberPointerType,
+                                      PointerType, ReferenceType));
 
 /// \brief Matches typedef types.
 ///
@@ -3185,6 +3205,16 @@ AST_TYPE_MATCHER(TypedefType, typedefType);
 /// \c templateSpecializationType() matches the type of the explicit
 /// instantiation in \c A and the type of the variable declaration in \c B.
 AST_TYPE_MATCHER(TemplateSpecializationType, templateSpecializationType);
+
+/// \brief Matches types nodes representing unary type transformations.
+///
+/// Given:
+/// \code
+///   typedef __underlying_type(T) type;
+/// \endcode
+/// unaryTransformType()
+///   matches "__underlying_type(T)"
+AST_TYPE_MATCHER(UnaryTransformType, unaryTransformType);
 
 /// \brief Matches record types (e.g. structs, classes).
 ///

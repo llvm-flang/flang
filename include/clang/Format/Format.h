@@ -45,6 +45,9 @@ struct FormatStyle {
   /// \brief The penalty for each character outside of the column limit.
   unsigned PenaltyExcessCharacter;
 
+  /// \brief The penalty for breaking before the first "<<".
+  unsigned PenaltyBreakFirstLessLess;
+
   /// \brief Set whether & and * bind to the type as opposed to the variable.
   bool PointerBindsToType;
 
@@ -76,6 +79,18 @@ struct FormatStyle {
   /// \brief If false, a function call's or function definition's parameters
   /// will either all be on the same line or will have one line each.
   bool BinPackParameters;
+
+  /// \brief If true, clang-format detects whether function calls and
+  /// definitions are formatted with one parameter per line.
+  ///
+  /// Each call can be bin-packed, one-per-line or inconclusive. If it is
+  /// inconclusive, e.g. completely on one line, but a decision needs to be
+  /// made, clang-format analyzes whether there are other bin-packed cases in
+  /// the input file and act accordingly.
+  ///
+  /// NOTE: This is an experimental flag, that might go away or be renamed. Do
+  /// not use this in config files, etc. Use at your own risk.
+  bool ExperimentalAutoDetectBinPacking;
 
   /// \brief Allow putting all parameters of a function declaration onto
   /// the next line even if \c BinPackParameters is \c false.
@@ -109,6 +124,9 @@ struct FormatStyle {
   /// \brief If \c true, always break after the \c template<...> of a template
   /// declaration.
   bool AlwaysBreakTemplateDeclarations;
+
+  /// \brief If \c true, always break before multiline string literals.
+  bool AlwaysBreakBeforeMultilineStrings;
 
   /// \brief If true, \c IndentWidth consecutive spaces will be replaced with
   /// tab characters.
@@ -144,18 +162,23 @@ struct FormatStyle {
                R.AllowShortIfStatementsOnASingleLine &&
            AlwaysBreakTemplateDeclarations ==
                R.AlwaysBreakTemplateDeclarations &&
+           AlwaysBreakBeforeMultilineStrings ==
+               R.AlwaysBreakBeforeMultilineStrings &&
            BinPackParameters == R.BinPackParameters &&
            BreakBeforeBraces == R.BreakBeforeBraces &&
            ColumnLimit == R.ColumnLimit &&
            ConstructorInitializerAllOnOneLineOrOnePerLine ==
                R.ConstructorInitializerAllOnOneLineOrOnePerLine &&
            DerivePointerBinding == R.DerivePointerBinding &&
+           ExperimentalAutoDetectBinPacking ==
+               R.ExperimentalAutoDetectBinPacking &&
            IndentCaseLabels == R.IndentCaseLabels &&
            IndentWidth == R.IndentWidth &&
            MaxEmptyLinesToKeep == R.MaxEmptyLinesToKeep &&
            ObjCSpaceBeforeProtocolList == R.ObjCSpaceBeforeProtocolList &&
-           PenaltyBreakString == R.PenaltyBreakString &&
            PenaltyBreakComment == R.PenaltyBreakComment &&
+           PenaltyBreakFirstLessLess == R.PenaltyBreakFirstLessLess &&
+           PenaltyBreakString == R.PenaltyBreakString &&
            PenaltyExcessCharacter == R.PenaltyExcessCharacter &&
            PenaltyReturnTypeOnItsOwnLine == R.PenaltyReturnTypeOnItsOwnLine &&
            PointerBindsToType == R.PointerBindsToType &&
