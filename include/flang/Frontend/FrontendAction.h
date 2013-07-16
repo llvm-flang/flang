@@ -33,7 +33,7 @@ class CompilerInstance;
 
 /// Abstract base class for actions which can be performed by the frontend.
 class FrontendAction {
-  OwningPtr<ASTUnit> CurrentASTUnit;
+  llvm::OwningPtr<ASTUnit> CurrentASTUnit;
   CompilerInstance *Instance;
 
 private:
@@ -124,13 +124,11 @@ public:
   }
 
   const StringRef getCurrentFile() const {
-    assert(!CurrentInput.isEmpty() && "No current file!");
-    return CurrentInput.getFile();
+    CurrentASTUnit.get()->getOriginalSourceFileName();
   }
 
   InputKind getCurrentFileKind() const {
-    assert(!CurrentInput.isEmpty() && "No current file!");
-    return CurrentInput.getKind();
+    return IK_None;
   }
 
   ASTUnit &getCurrentASTUnit() const {

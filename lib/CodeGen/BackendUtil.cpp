@@ -44,7 +44,7 @@ namespace {
 class EmitAssemblyHelper {
   DiagnosticsEngine &Diags;
   const CodeGenOptions &CodeGenOpts;
-  const clang::TargetOptions &TargetOpts;
+  const flang::TargetOptions &TargetOpts;
   const LangOptions &LangOpts;
   Module *TheModule;
 
@@ -107,7 +107,7 @@ private:
 public:
   EmitAssemblyHelper(DiagnosticsEngine &_Diags,
                      const CodeGenOptions &CGOpts,
-                     const clang::TargetOptions &TOpts,
+                     const flang::TargetOptions &TOpts,
                      const LangOptions &LOpts,
                      Module *M)
     : Diags(_Diags), CodeGenOpts(CGOpts), TargetOpts(TOpts), LangOpts(LOpts),
@@ -139,71 +139,9 @@ private:
 
 }
 
-static void addObjCARCAPElimPass(const PassManagerBuilder &Builder, PassManagerBase &PM) {
-  if (Builder.OptLevel > 0)
-    PM.add(createObjCARCAPElimPass());
-}
-
-static void addObjCARCExpandPass(const PassManagerBuilder &Builder, PassManagerBase &PM) {
-  if (Builder.OptLevel > 0)
-    PM.add(createObjCARCExpandPass());
-}
-
-static void addObjCARCOptPass(const PassManagerBuilder &Builder, PassManagerBase &PM) {
-  if (Builder.OptLevel > 0)
-    PM.add(createObjCARCOptPass());
-}
-
 static void addBoundsCheckingPass(const PassManagerBuilder &Builder,
                                     PassManagerBase &PM) {
   PM.add(createBoundsCheckingPass());
-}
-
-static void addAddressSanitizerPasses(const PassManagerBuilder &Builder,
-                                      PassManagerBase &PM) {
-  const PassManagerBuilderWrapper &BuilderWrapper =
-      static_cast<const PassManagerBuilderWrapper&>(Builder);
-  const CodeGenOptions &CGOpts = BuilderWrapper.getCGOpts();
-  const LangOptions &LangOpts = BuilderWrapper.getLangOpts();
-  PM.add(createAddressSanitizerFunctionPass(
-      LangOpts.Sanitize.InitOrder,
-      LangOpts.Sanitize.UseAfterReturn,
-      LangOpts.Sanitize.UseAfterScope,
-      CGOpts.SanitizerBlacklistFile,
-      CGOpts.SanitizeAddressZeroBaseShadow));
-  PM.add(createAddressSanitizerModulePass(
-      LangOpts.Sanitize.InitOrder,
-      CGOpts.SanitizerBlacklistFile,
-      CGOpts.SanitizeAddressZeroBaseShadow));
-}
-
-static void addMemorySanitizerPass(const PassManagerBuilder &Builder,
-                                   PassManagerBase &PM) {
-  const PassManagerBuilderWrapper &BuilderWrapper =
-      static_cast<const PassManagerBuilderWrapper&>(Builder);
-  const CodeGenOptions &CGOpts = BuilderWrapper.getCGOpts();
-  PM.add(createMemorySanitizerPass(CGOpts.SanitizeMemoryTrackOrigins,
-                                   CGOpts.SanitizerBlacklistFile));
-
-  // MemorySanitizer inserts complex instrumentation that mostly follows
-  // the logic of the original code, but operates on "shadow" values.
-  // It can benefit from re-running some general purpose optimization passes.
-  if (Builder.OptLevel > 0) {
-    PM.add(createEarlyCSEPass());
-    PM.add(createReassociatePass());
-    PM.add(createLICMPass());
-    PM.add(createGVNPass());
-    PM.add(createInstructionCombiningPass());
-    PM.add(createDeadStoreEliminationPass());
-  }
-}
-
-static void addThreadSanitizerPass(const PassManagerBuilder &Builder,
-                                   PassManagerBase &PM) {
-  const PassManagerBuilderWrapper &BuilderWrapper =
-      static_cast<const PassManagerBuilderWrapper&>(Builder);
-  const CodeGenOptions &CGOpts = BuilderWrapper.getCGOpts();
-  PM.add(createThreadSanitizerPass(CGOpts.SanitizerBlacklistFile));
 }
 
 void EmitAssemblyHelper::CreatePasses(TargetMachine *TM) {
@@ -226,44 +164,6 @@ void EmitAssemblyHelper::CreatePasses(TargetMachine *TM) {
 
   PMBuilder.DisableUnitAtATime = !CodeGenOpts.UnitAtATime;
   PMBuilder.DisableUnrollLoops = !CodeGenOpts.UnrollLoops;
-
-  // In ObjC ARC mode, add the main ARC optimization passes.
-  if (LangOpts.ObjCAutoRefCount) {
-    PMBuilder.addExtension(PassManagerBuilder::EP_EarlyAsPossible,
-                           addObjCARCExpandPass);
-    PMBuilder.addExtension(PassManagerBuilder::EP_ModuleOptimizerEarly,
-                           addObjCARCAPElimPass);
-    PMBuilder.addExtension(PassManagerBuilder::EP_ScalarOptimizerLate,
-                           addObjCARCOptPass);
-  }
-
-  if (LangOpts.Sanitize.Bounds) {
-    PMBuilder.addExtension(PassManagerBuilder::EP_ScalarOptimizerLate,
-                           addBoundsCheckingPass);
-    PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0,
-                           addBoundsCheckingPass);
-  }
-
-  if (LangOpts.Sanitize.Address) {
-    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast,
-                           addAddressSanitizerPasses);
-    PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0,
-                           addAddressSanitizerPasses);
-  }
-
-  if (LangOpts.Sanitize.Memory) {
-    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast,
-                           addMemorySanitizerPass);
-    PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0,
-                           addMemorySanitizerPass);
-  }
-
-  if (LangOpts.Sanitize.Thread) {
-    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast,
-                           addThreadSanitizerPass);
-    PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0,
-                           addThreadSanitizerPass);
-  }
 
   // Figure out TargetLibraryInfo.
   Triple TargetTriple(TheModule->getTargetTriple());
@@ -457,7 +357,7 @@ TargetMachine *EmitAssemblyHelper::CreateTargetMachine(bool MustCreateTM) {
   Options.RealignStack = CodeGenOpts.StackRealignment;
   Options.DisableTailCalls = CodeGenOpts.DisableTailCalls;
   Options.TrapFuncName = CodeGenOpts.TrapFuncName;
-  Options.PositionIndependentExecutable = LangOpts.PIELevel != 0;
+  //Options.PositionIndependentExecutable = LangOpts.PIELevel != 0;
   Options.EnableSegmentedStacks = CodeGenOpts.EnableSegmentedStacks;
 
   TargetMachine *TM = TheTarget->createTargetMachine(Triple, TargetOpts.CPU,
@@ -504,13 +404,6 @@ bool EmitAssemblyHelper::AddEmitPasses(BackendAction Action,
     CGFT = TargetMachine::CGFT_Null;
   else
     assert(Action == Backend_EmitAssembly && "Invalid action!");
-
-  // Add ObjC ARC final-cleanup optimizations. This is done as part of the
-  // "codegen" passes so that it isn't run multiple times when there is
-  // inlining happening.
-  if (LangOpts.ObjCAutoRefCount &&
-      CodeGenOpts.OptimizationLevel > 0)
-    PM->add(createObjCARCContractPass());
 
   if (TM->addPassesToEmitFile(*PM, OS, CGFT,
                               /*DisableVerify=*/!CodeGenOpts.VerifyModule)) {

@@ -205,28 +205,6 @@ ASTConsumer *CodeGenAction::CreateASTConsumer(CompilerInstance &CI,
 
   llvm::Module *LinkModuleToUse = LinkModule;
 
-  // If we were not given a link module, and the user requested that one be
-  // loaded from bitcode, do so now.
-  const std::string &LinkBCFile = CI.getCodeGenOpts().LinkBitcodeFile;
-  if (!LinkModuleToUse && !LinkBCFile.empty()) {
-    std::string ErrorStr;
-
-    llvm::MemoryBuffer *BCBuf =
-      CI.getFileManager().getBufferForFile(LinkBCFile, &ErrorStr);
-    if (!BCBuf) {
-      CI.getDiagnostics().Report(diag::err_cannot_open_file)
-        << LinkBCFile << ErrorStr;
-      return 0;
-    }
-
-    LinkModuleToUse = getLazyBitcodeModule(BCBuf, *VMContext, &ErrorStr);
-    if (!LinkModuleToUse) {
-      CI.getDiagnostics().Report(diag::err_cannot_open_file)
-        << LinkBCFile << ErrorStr;
-      return 0;
-    }
-  }
-
   BEConsumer = 
       new BackendConsumer(BA, CI.getDiagnostics(),
                           CI.getCodeGenOpts(), CI.getTargetOpts(),
@@ -237,62 +215,6 @@ ASTConsumer *CodeGenAction::CreateASTConsumer(CompilerInstance &CI,
 }
 
 void CodeGenAction::ExecuteAction() {
-  // If this is an IR file, we have to treat it specially.
-  if (getCurrentFileKind() == IK_LLVM_IR) {
-    BackendAction BA = static_cast<BackendAction>(Act);
-    CompilerInstance &CI = getCompilerInstance();
-    raw_ostream *OS = GetOutputStream(CI, getCurrentFile(), BA);
-    if (BA != Backend_EmitNothing && !OS)
-      return;
-
-    bool Invalid;
-    llvm::SourceMgr &SM = CI.getSourceManager();
-    const llvm::MemoryBuffer *MainFile = SM.getBuffer(SM.getMainFileID(),
-                                                      &Invalid);
-    if (Invalid)
-      return;
-
-    // FIXME: This is stupid, IRReader shouldn't take ownership.
-    llvm::MemoryBuffer *MainFileCopy =
-      llvm::MemoryBuffer::getMemBufferCopy(MainFile->getBuffer(),
-                                           getCurrentFile());
-
-    llvm::SMDiagnostic Err;
-    TheModule.reset(ParseIR(MainFileCopy, Err, *VMContext));
-    if (!TheModule) {
-      // Translate from the diagnostic info to the SourceManager location.
-      SourceLocation Loc = SM.translateFileLineCol(
-        SM.getFileEntryForID(SM.getMainFileID()), Err.getLineNo(),
-        Err.getColumnNo() + 1);
-
-      // Get a custom diagnostic for the error. We strip off a leading
-      // diagnostic code if there is one.
-      StringRef Msg = Err.getMessage();
-      if (Msg.startswith("error: "))
-        Msg = Msg.substr(7);
-
-      // Escape '%', which is interpreted as a format character.
-      SmallString<128> EscapedMessage;
-      for (unsigned i = 0, e = Msg.size(); i != e; ++i) {
-        if (Msg[i] == '%')
-          EscapedMessage += '%';
-        EscapedMessage += Msg[i];
-      }
-
-      unsigned DiagID = CI.getDiagnostics().getCustomDiagID(
-          DiagnosticsEngine::Error, EscapedMessage);
-
-      CI.getDiagnostics().Report(Loc, DiagID);
-      return;
-    }
-
-    EmitBackendOutput(CI.getDiagnostics(), CI.getCodeGenOpts(),
-                      CI.getTargetOpts(), CI.getLangOpts(),
-                      TheModule.get(),
-                      BA, OS);
-    return;
-  }
-
   // Otherwise follow the normal AST path.
   this->ASTFrontendAction::ExecuteAction();
 }
