@@ -26,13 +26,12 @@
 #include <string>
 #include <vector>
 
-namespace clang {
+namespace flang {
 class ASTConsumer;
 class CompilerInstance;
 
 /// Abstract base class for actions which can be performed by the frontend.
 class FrontendAction {
-  FrontendInputFile CurrentInput;
   CompilerInstance *Instance;
 
 private:
@@ -112,29 +111,6 @@ public:
   }
 
   void setCompilerInstance(CompilerInstance *Value) { Instance = Value; }
-
-  /// @}
-  /// @name Current File Information
-  /// @{
-
-  bool isCurrentFileAST() const {
-    assert(!CurrentInput.isEmpty() && "No current file!");
-    return CurrentASTUnit.isValid();
-  }
-
-  const FrontendInputFile &getCurrentInput() const {
-    return CurrentInput;
-  }
-
-  const StringRef getCurrentFile() const {
-    assert(!CurrentInput.isEmpty() && "No current file!");
-    return CurrentInput.getFile();
-  }
-
-  InputKind getCurrentFileKind() const {
-    assert(!CurrentInput.isEmpty() && "No current file!");
-    return CurrentInput.getKind();
-  }
 
   /// @}
   /// @name Public Action Interface

@@ -7,17 +7,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "clang/CodeGen/CodeGenAction.h"
-#include "clang/AST/ASTConsumer.h"
-#include "clang/AST/ASTContext.h"
-#include "clang/AST/DeclGroup.h"
-#include "clang/Basic/FileManager.h"
-#include "clang/Basic/SourceManager.h"
-#include "clang/Basic/TargetInfo.h"
-#include "clang/CodeGen/BackendUtil.h"
-#include "clang/CodeGen/ModuleBuilder.h"
-#include "clang/Frontend/CompilerInstance.h"
-#include "clang/Frontend/FrontendDiagnostic.h"
+#include "flang/CodeGen/CodeGenAction.h"
+#include "flang/CodeGen/BackendUtil.h"
+#include "flang/AST/ASTConsumer.h"
+#include "flang/AST/ASTContext.h"
+#include "flang/AST/DeclGroup.h"
+#include "flang/CodeGen/BackendUtil.h"
+#include "flang/CodeGen/ModuleBuilder.h"
+#include "flang/Frontend/FrontendDiagnostic.h"
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Bitcode/ReaderWriter.h"
@@ -29,10 +26,11 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/Timer.h"
-using namespace clang;
+
+using namespace flang;
 using namespace llvm;
 
-namespace clang {
+namespace flang {
   class BackendConsumer : public ASTConsumer {
     virtual void anchor();
     DiagnosticsEngine &Diags;
@@ -76,10 +74,6 @@ namespace clang {
     llvm::Module *takeModule() { return TheModule.take(); }
     llvm::Module *takeLinkModule() { return LinkModule.take(); }
 
-    virtual void HandleCXXStaticMemberVarInstantiation(VarDecl *VD) {
-      Gen->HandleCXXStaticMemberVarInstantiation(VD);
-    }
-
     virtual void Initialize(ASTContext &Ctx) {
       Context = &Ctx;
 
@@ -92,22 +86,6 @@ namespace clang {
 
       if (llvm::TimePassesIsEnabled)
         LLVMIRGeneration.stopTimer();
-    }
-
-    virtual bool HandleTopLevelDecl(DeclGroupRef D) {
-      PrettyStackTraceDecl CrashInfo(*D.begin(), SourceLocation(),
-                                     Context->getSourceManager(),
-                                     "LLVM IR generation of declaration");
-
-      if (llvm::TimePassesIsEnabled)
-        LLVMIRGeneration.startTimer();
-
-      Gen->HandleTopLevelDecl(D);
-
-      if (llvm::TimePassesIsEnabled)
-        LLVMIRGeneration.stopTimer();
-
-      return true;
     }
 
     virtual void HandleTranslationUnit(ASTContext &C) {
@@ -150,136 +128,14 @@ namespace clang {
         }
       }
 
-      // Install an inline asm handler so that diagnostics get printed through
-      // our diagnostics hooks.
-      LLVMContext &Ctx = TheModule->getContext();
-      LLVMContext::InlineAsmDiagHandlerTy OldHandler =
-        Ctx.getInlineAsmDiagnosticHandler();
-      void *OldContext = Ctx.getInlineAsmDiagnosticContext();
-      Ctx.setInlineAsmDiagnosticHandler(InlineAsmDiagHandler, this);
-
       EmitBackendOutput(Diags, CodeGenOpts, TargetOpts, LangOpts,
                         TheModule.get(), Action, AsmOutStream);
       
-      Ctx.setInlineAsmDiagnosticHandler(OldHandler, OldContext);
     }
 
-    virtual void HandleTagDeclDefinition(TagDecl *D) {
-      PrettyStackTraceDecl CrashInfo(D, SourceLocation(),
-                                     Context->getSourceManager(),
-                                     "LLVM IR generation of declaration");
-      Gen->HandleTagDeclDefinition(D);
-    }
-
-    virtual void HandleTagDeclRequiredDefinition(const TagDecl *D) {
-      Gen->HandleTagDeclRequiredDefinition(D);
-    }
-
-    virtual void CompleteTentativeDefinition(VarDecl *D) {
-      Gen->CompleteTentativeDefinition(D);
-    }
-
-    virtual void HandleVTable(CXXRecordDecl *RD, bool DefinitionRequired) {
-      Gen->HandleVTable(RD, DefinitionRequired);
-    }
-
-    virtual void HandleLinkerOptionPragma(llvm::StringRef Opts) {
-      Gen->HandleLinkerOptionPragma(Opts);
-    }
-
-    virtual void HandleDetectMismatch(llvm::StringRef Name,
-                                      llvm::StringRef Value) {
-      Gen->HandleDetectMismatch(Name, Value);
-    }
-
-    virtual void HandleDependentLibrary(llvm::StringRef Opts) {
-      Gen->HandleDependentLibrary(Opts);
-    }
-
-    static void InlineAsmDiagHandler(const llvm::SMDiagnostic &SM,void *Context,
-                                     unsigned LocCookie) {
-      SourceLocation Loc = SourceLocation::getFromRawEncoding(LocCookie);
-      ((BackendConsumer*)Context)->InlineAsmDiagHandler2(SM, Loc);
-    }
-
-    void InlineAsmDiagHandler2(const llvm::SMDiagnostic &,
-                               SourceLocation LocCookie);
   };
   
   void BackendConsumer::anchor() {}
-}
-
-/// ConvertBackendLocation - Convert a location in a temporary llvm::SourceMgr
-/// buffer to be a valid FullSourceLoc.
-static FullSourceLoc ConvertBackendLocation(const llvm::SMDiagnostic &D,
-                                            SourceManager &CSM) {
-  // Get both the clang and llvm source managers.  The location is relative to
-  // a memory buffer that the LLVM Source Manager is handling, we need to add
-  // a copy to the Clang source manager.
-  const llvm::SourceMgr &LSM = *D.getSourceMgr();
-
-  // We need to copy the underlying LLVM memory buffer because llvm::SourceMgr
-  // already owns its one and clang::SourceManager wants to own its one.
-  const MemoryBuffer *LBuf =
-  LSM.getMemoryBuffer(LSM.FindBufferContainingLoc(D.getLoc()));
-
-  // Create the copy and transfer ownership to clang::SourceManager.
-  llvm::MemoryBuffer *CBuf =
-  llvm::MemoryBuffer::getMemBufferCopy(LBuf->getBuffer(),
-                                       LBuf->getBufferIdentifier());
-  FileID FID = CSM.createFileIDForMemBuffer(CBuf);
-
-  // Translate the offset into the file.
-  unsigned Offset = D.getLoc().getPointer()  - LBuf->getBufferStart();
-  SourceLocation NewLoc =
-  CSM.getLocForStartOfFile(FID).getLocWithOffset(Offset);
-  return FullSourceLoc(NewLoc, CSM);
-}
-
-
-/// InlineAsmDiagHandler2 - This function is invoked when the backend hits an
-/// error parsing inline asm.  The SMDiagnostic indicates the error relative to
-/// the temporary memory buffer that the inline asm parser has set up.
-void BackendConsumer::InlineAsmDiagHandler2(const llvm::SMDiagnostic &D,
-                                            SourceLocation LocCookie) {
-  // There are a couple of different kinds of errors we could get here.  First,
-  // we re-format the SMDiagnostic in terms of a clang diagnostic.
-
-  // Strip "error: " off the start of the message string.
-  StringRef Message = D.getMessage();
-  if (Message.startswith("error: "))
-    Message = Message.substr(7);
-
-  // If the SMDiagnostic has an inline asm source location, translate it.
-  FullSourceLoc Loc;
-  if (D.getLoc() != SMLoc())
-    Loc = ConvertBackendLocation(D, Context->getSourceManager());
-  
-
-  // If this problem has clang-level source location information, report the
-  // issue as being an error in the source with a note showing the instantiated
-  // code.
-  if (LocCookie.isValid()) {
-    Diags.Report(LocCookie, diag::err_fe_inline_asm).AddString(Message);
-    
-    if (D.getLoc().isValid()) {
-      DiagnosticBuilder B = Diags.Report(Loc, diag::note_fe_inline_asm_here);
-      // Convert the SMDiagnostic ranges into SourceRange and attach them
-      // to the diagnostic.
-      for (unsigned i = 0, e = D.getRanges().size(); i != e; ++i) {
-        std::pair<unsigned, unsigned> Range = D.getRanges()[i];
-        unsigned Column = D.getColumnNo();
-        B << SourceRange(Loc.getLocWithOffset(Range.first - Column),
-                         Loc.getLocWithOffset(Range.second - Column));
-      }
-    }
-    return;
-  }
-  
-  // Otherwise, report the backend error as occurring in the generated .s file.
-  // If Loc is invalid, we still need to report the error, it just gets no
-  // location info.
-  Diags.Report(Loc, diag::err_fe_inline_asm).AddString(Message);
 }
 
 //

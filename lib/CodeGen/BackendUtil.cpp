@@ -7,12 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "clang/CodeGen/BackendUtil.h"
-#include "clang/Basic/Diagnostic.h"
-#include "clang/Basic/LangOptions.h"
-#include "clang/Basic/TargetOptions.h"
-#include "clang/Frontend/CodeGenOptions.h"
-#include "clang/Frontend/FrontendDiagnostic.h"
+#include "flang/CodeGen/BackendUtil.h"
+#include "flang/Basic/Diagnostic.h"
+#include "flang/Basic/LangOptions.h"
+#include "flang/Basic/TargetOptions.h"
+#include "flang/Frontend/CodeGenOptions.h"
+#include "flang/Frontend/FrontendDiagnostic.h"
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/Assembly/PrintModulePass.h"
 #include "llvm/Bitcode/ReaderWriter.h"
@@ -36,7 +36,7 @@
 #include "llvm/Transforms/Instrumentation.h"
 #include "llvm/Transforms/ObjCARC.h"
 #include "llvm/Transforms/Scalar.h"
-using namespace clang;
+using namespace flang;
 using namespace llvm;
 
 namespace {
@@ -580,9 +580,9 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action, raw_ostream *OS) {
   }
 }
 
-void clang::EmitBackendOutput(DiagnosticsEngine &Diags,
+void flang::EmitBackendOutput(DiagnosticsEngine &Diags,
                               const CodeGenOptions &CGOpts,
-                              const clang::TargetOptions &TOpts,
+                              const flang::TargetOptions &TOpts,
                               const LangOptions &LOpts,
                               Module *M,
                               BackendAction Action, raw_ostream *OS) {

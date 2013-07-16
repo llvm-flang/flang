@@ -144,8 +144,6 @@ public:
   unsigned ASTDumpLookups : 1;             ///< Whether we include lookup table
                                            ///< dumps in AST dumps.
 
-  CodeCompleteOptions CodeCompleteOpts;
-
   enum {
     ARCMT_None,
     ARCMT_Check,

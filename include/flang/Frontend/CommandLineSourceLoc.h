@@ -59,7 +59,7 @@ namespace llvm {
     ///
     /// Source locations are of the form filename:line:column.
     template<>
-    class parser<clang::ParsedSourceLocation>
+    class parser<flang::ParsedSourceLocation>
       : public basic_parser<flang::ParsedSourceLocation> {
     public:
       inline bool parse(Option &O, StringRef ArgName, StringRef ArgValue,
