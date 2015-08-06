@@ -244,11 +244,6 @@ bool Sema::CheckEquivalenceType(QualType ExpectedType, const Expr *E) {
     }
   } else if(ExpectedType->isBuiltinType()) {
     if(IsDefaultBuiltinOrDoublePrecisionType(ExpectedType)) {
-      if(ObjectType->isCharacterType()) {
-        Diags.Report(E->getLocation(), diag::err_expected_numeric_or_logical_expr)
-          << ObjectType << E->getSourceRange();
-        return true;
-      }
       if(!IsDefaultBuiltinOrDoublePrecisionType(ObjectType)) {
         Diags.Report(E->getLocation(),
                      diag::err_typecheck_expected_default_kind_expr)
